@@ -6,15 +6,16 @@
     <Authors>Andreas Rohleder</Authors>
     <Company>CaveSystems GmbH, Andreas Rohleder</Company>
     <Product>CaveSystems Platform Library</Product>
-    <Copyright>(c) 2003-2018 Andreas Rohleder</Copyright>
-    <PackageLicenseUrl>https://www.gnu.org/licenses/lgpl-3.0.en.html</PackageLicenseUrl>
+    <Copyright>(c) 2003-2019 Andreas Rohleder</Copyright>
+    <PackageLicenseExpression>LGPL-3.0-only</PackageLicenseExpression>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>Cave.Platform.snk</AssemblyOriginatorKeyFile>
     <Version>1.0.0</Version>
     <PackageIconUrl>https://www.cavesystems.de/favicon.ico</PackageIconUrl>
     <PackageTags>CaveSystems Platform</PackageTags>
-    <PackageProjectUrl>https://github.com/Dingsd4/cave-platform</PackageProjectUrl>
-    <PackageReleaseNotes>Aktueller Release Candidate 2018</PackageReleaseNotes>
+    <PackageProjectUrl>https://github.com/CaveSystems/cave-platform</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CaveSystems/cave-platform</RepositoryUrl>
+    <PackageReleaseNotes />
     <Description>CaveSystems Platform Bibliothek</Description>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Cave.Platform.xml</DocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -66,5 +67,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Cave.Extensions" Version="1.0.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-18618-05">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 </Project>
