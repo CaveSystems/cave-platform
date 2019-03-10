@@ -22,19 +22,31 @@ namespace Cave
             {
                 foreach (var type in asm.GetTypes())
                 {
-                    if (type.IsAbstract) continue;
+                    if (type.IsAbstract)
+                    {
+                        continue;
+                    }
+
                     if (interfaceType.IsAssignableFrom(type))
                     {
-                        try { T api = (T)Activator.CreateInstance(type); types.Add(api); }
-                        catch { Trace.TraceError($"Could not create instance of type {type}!"); }
+                        try
+                        {
+                            T api = (T)Activator.CreateInstance(type);
+                            types.Add(api);
+                        }
+                        catch
+                        {
+                            Trace.TraceError($"Could not create instance of type {type}!");
+                        }
                     }
                 }
             }
+
             return types;
         }
 
         /// <summary>Gets the installation unique identifier.</summary>
-        /// <returns></returns>
+        /// <returns>unique id as GUID.</returns>
         public static Guid GetInstallationGuid()
         {
             var root = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
@@ -44,24 +56,29 @@ namespace Cave
                 Directory.CreateDirectory(Path.GetDirectoryName(fileName));
                 File.WriteAllText(fileName, Guid.NewGuid().ToString());
             }
+
             return new Guid(File.ReadAllLines(fileName)[0]);
         }
 
-        static uint m_ProgramID;
+        private static uint programID;
 
         /// <summary>Gets the installation identifier.</summary>
         /// <value>The installation identifier.</value>
-        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="NotSupportedException">if <see cref="Guid.GetHashCode()"/> failes.</exception>
         public static uint ProgramID
         {
             get
             {
-                if (m_ProgramID == 0)
+                if (programID == 0)
                 {
-                    m_ProgramID = (uint)(GetInstallationGuid().GetHashCode() ^ AppDomain.CurrentDomain.BaseDirectory.GetHashCode());
-                    if (m_ProgramID == 0) throw new NotSupportedException();
+                    programID = (uint)(GetInstallationGuid().GetHashCode() ^ AppDomain.CurrentDomain.BaseDirectory.GetHashCode());
+                    if (programID == 0)
+                    {
+                        throw new NotSupportedException();
+                    }
                 }
-                return m_ProgramID;
+
+                return programID;
             }
         }
 
@@ -85,14 +102,17 @@ namespace Cave
         /// <param name="name">The name of the type.</param>
         /// <param name="mode">The loader mode.</param>
         /// <returns>Returns the first matching type.</returns>
-        /// <exception cref="System.TypeLoadException"></exception>
+        /// <exception cref="System.TypeLoadException">when type cannot be loaded.</exception>
 #pragma warning disable CS0618 // Allow obsolete functions/fields
         public static Type FindType(string name, LoadMode mode = 0)
         {
             {
-                //try direct load first.
+                // try direct load first.
                 var type = Type.GetType(name, false);
-                if (type != null) return type;
+                if (type != null)
+                {
+                    return type;
+                }
             }
 
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -106,13 +126,17 @@ namespace Cave
                 }
             }
 
-            if (0 != (mode & LoadMode.LoadAssemblies))
+            if ((mode & LoadMode.LoadAssemblies) != 0)
             {
                 string dll = name;
                 while (dll.Length > 1)
                 {
                     int i = dll.LastIndexOf('.');
-                    if (i < 0) break;
+                    if (i < 0)
+                    {
+                        break;
+                    }
+
                     dll = dll.Substring(0, i);
                     Trace.TraceInformation("<red>(Insecure)<default> loading assembly <yellow>{0}<default> for typesearch <cyan>{1}", dll, name);
                     var assembly = Assembly.LoadWithPartialName(dll);
@@ -126,14 +150,20 @@ namespace Cave
                             return type;
                         }
                     }
-                    if (dll.IndexOf('.') < 0) break;
+
+                    if (dll.IndexOf('.') < 0)
+                    {
+                        break;
+                    }
                 }
             }
-            if (0 == (mode & LoadMode.NoException))
+
+            if ((mode & LoadMode.NoException) == 0)
             {
                 Trace.TraceInformation("Could not find type <red>{0}", name);
                 throw new TypeLoadException(string.Format("Cannot load type {0}", name));
             }
+
             return null;
         }
 #pragma warning restore CS0618
@@ -147,9 +177,17 @@ namespace Cave
         {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (assembly.GetName().Name == name) return assembly;
+                if (assembly.GetName().Name == name)
+                {
+                    return assembly;
+                }
             }
-            if (throwException) throw new ArgumentException(string.Format("Cannot find assembly {0}", name));
+
+            if (throwException)
+            {
+                throw new ArgumentException(string.Format("Cannot find assembly {0}", name));
+            }
+
             return null;
         }
     }

@@ -16,7 +16,7 @@ namespace Cave
         static string systemVersionString;
 
         /// <summary>
-        /// Obtains the <see cref="PlatformType"/> of the current platform
+        /// Gets the <see cref="PlatformType"/> of the current platform.
         /// </summary>
         public static PlatformType Type
         {
@@ -29,7 +29,7 @@ namespace Cave
                         case 0: /*Win32S*/
                         case 1: /*Win32NT*/
                         case 2: /*Win32Windows*/
-                            type= PlatformType.Windows;
+                            type = PlatformType.Windows;
                             break;
 
                         case 3: /*Windows CE / Compact Framework*/
@@ -37,17 +37,52 @@ namespace Cave
                             break;
 
                         case 4: /*Unix, mono returns this on all platforms except windows*/
-                            if (AppDom.FindAssembly("Mono.Android", false) != null) return PlatformType.Android;
-                            try { if (File.Exists("/usr/lib/libc.dylib")) return PlatformType.MacOS; }
-                            catch { /*Exception on Android on this one... why ?*/ }
+                            if (AppDom.FindAssembly("Mono.Android", false) != null)
+                            {
+                                return PlatformType.Android;
+                            }
+
+                            try
+                            {
+                                if (File.Exists("/usr/lib/libc.dylib"))
+                                {
+                                    return PlatformType.MacOS;
+                                }
+                            }
+                            catch
+                            { /*Exception on Android on this one... why ?*/
+                            }
+
                             string osType = SystemVersionString.ToLower();
-                            if (osType.StartsWith("linux")) type = PlatformType.Linux;
-                            else if (osType.StartsWith("darwin")) type = PlatformType.MacOS;
-                            else if (osType.StartsWith("solaris")) type = PlatformType.Solaris;
-                            else if (osType.StartsWith("bsd")) type = PlatformType.BSD;
-                            else if (osType.StartsWith("msys")) type = PlatformType.Windows;
-                            else if (osType.StartsWith("cygwin")) type = PlatformType.Windows;
-                            else type = PlatformType.UnknownUnix;
+                            if (osType.StartsWith("linux"))
+                            {
+                                type = PlatformType.Linux;
+                            }
+                            else if (osType.StartsWith("darwin"))
+                            {
+                                type = PlatformType.MacOS;
+                            }
+                            else if (osType.StartsWith("solaris"))
+                            {
+                                type = PlatformType.Solaris;
+                            }
+                            else if (osType.StartsWith("bsd"))
+                            {
+                                type = PlatformType.BSD;
+                            }
+                            else if (osType.StartsWith("msys"))
+                            {
+                                type = PlatformType.Windows;
+                            }
+                            else if (osType.StartsWith("cygwin"))
+                            {
+                                type = PlatformType.Windows;
+                            }
+                            else
+                            {
+                                type = PlatformType.UnknownUnix;
+                            }
+
                             break;
 
                         case 5: /*Xbox*/
@@ -67,6 +102,7 @@ namespace Cave
                             break;
                     }
                 }
+
                 return type;
             }
         }
@@ -79,10 +115,10 @@ namespace Cave
             {
                 if (systemVersionString == null)
                 {
-					systemVersionString = Environment.OSVersion.VersionString;
+                    systemVersionString = Environment.OSVersion.VersionString;
                     if (IsMicrosoft)
                     {
-                        //all done
+                        // all done
                     }
                     else if (IsAndroid)
                     {
@@ -94,17 +130,31 @@ namespace Cave
                         Process process = Process.Start(new ProcessStartInfo("uname", "-a") { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, });
                         string systemVersionString = null;
                         ThreadPool.QueueUserWorkItem(delegate { systemVersionString = process.StandardOutput.ReadToEnd(); });
-                        if (!process.WaitForExit(10000)) try { process.Kill(); } catch { }
+                        if (!process.WaitForExit(10000))
+                        {
+                            try
+                            {
+                                process.Kill();
+                            }
+                            catch
+                            {
+                            }
+                        }
+
                         int i = systemVersionString?.IndexOf('\n') ?? -1;
-                        if (i > -1) systemVersionString = systemVersionString.Substring(0, i);
+                        if (i > -1)
+                        {
+                            systemVersionString = systemVersionString.Substring(0, i);
+                        }
                     }
                 }
+
                 return systemVersionString;
             }
         }
 
         /// <summary>
-        /// Obtains whether we run at a microsoft os or not
+        /// Gets a value indicating whether we run at a microsoft os or not.
         /// </summary>
         public static bool IsMicrosoft
         {
@@ -128,9 +178,8 @@ namespace Cave
             }
         }
 
-
         /// <summary>
-        /// Obtains whether we run under mono or not
+        /// Gets a value indicating whether we run under mono or not.
         /// </summary>
         public static bool IsMono
         {
@@ -140,15 +189,15 @@ namespace Cave
             }
         }
 
-		/// <summary>
-		/// Obtains whether we run at android or not
-		/// </summary>
-		public static bool IsAndroid
-		{
-			get
-			{
-				return (AppDom.FindAssembly("Mono.Android", false) != null);
-			}
-		}
+        /// <summary>
+        /// Gets a value indicating whether we run at android or not.
+        /// </summary>
+        public static bool IsAndroid
+        {
+            get
+            {
+                return AppDom.FindAssembly("Mono.Android", false) != null;
+            }
+        }
     }
 }
