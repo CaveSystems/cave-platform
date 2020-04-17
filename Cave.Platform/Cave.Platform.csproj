@@ -56,7 +56,7 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)'=='net20' OR '$(TargetFramework)'=='net35' OR '$(TargetFramework)'=='netstandard1.3'">
+  <ItemGroup Condition="'$(TargetFramework)'=='net20'">
     <PackageReference Include="Cave.Backports" Version="1.0.7" />
   </ItemGroup>
   <ItemGroup>
