@@ -2,202 +2,283 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Cave
 {
     /// <summary>
-    /// Provides access to the current platform type
+    /// Provides access to the current platform type.
     /// </summary>
     [ExcludeFromCodeCoverage]
     public static class Platform
     {
-        static PlatformType type;
-        static string systemVersionString;
-
         /// <summary>
         /// Gets the <see cref="PlatformType"/> of the current platform.
         /// </summary>
-        public static PlatformType Type
-        {
-            get
-            {
-                if (type == PlatformType.Unknown)
-                {
-                    switch ((int)Environment.OSVersion.Platform)
-                    {
-                        case 0: /*Win32S*/
-                        case 1: /*Win32NT*/
-                        case 2: /*Win32Windows*/
-                            type = PlatformType.Windows;
-                            break;
-
-                        case 3: /*Windows CE / Compact Framework*/
-                            type = PlatformType.CompactFramework;
-                            break;
-
-                        case 4: /*Unix, mono returns this on all platforms except windows*/
-                            if (AppDom.FindAssembly("Mono.Android", false) != null)
-                            {
-                                return PlatformType.Android;
-                            }
-
-                            try
-                            {
-                                if (File.Exists("/usr/lib/libc.dylib"))
-                                {
-                                    return PlatformType.MacOS;
-                                }
-                            }
-                            catch
-                            { /*Exception on Android on this one... why ?*/
-                            }
-
-                            string osType = SystemVersionString.ToLower();
-                            if (osType.StartsWith("linux"))
-                            {
-                                type = PlatformType.Linux;
-                            }
-                            else if (osType.StartsWith("darwin"))
-                            {
-                                type = PlatformType.MacOS;
-                            }
-                            else if (osType.StartsWith("solaris"))
-                            {
-                                type = PlatformType.Solaris;
-                            }
-                            else if (osType.StartsWith("bsd"))
-                            {
-                                type = PlatformType.BSD;
-                            }
-                            else if (osType.StartsWith("msys"))
-                            {
-                                type = PlatformType.Windows;
-                            }
-                            else if (osType.StartsWith("cygwin"))
-                            {
-                                type = PlatformType.Windows;
-                            }
-                            else
-                            {
-                                type = PlatformType.UnknownUnix;
-                            }
-
-                            break;
-
-                        case 5: /*Xbox*/
-                            type = PlatformType.Xbox;
-                            break;
-
-                        case 6: /*MacOSX*/
-                            type = PlatformType.MacOS;
-                            break;
-
-                        case 128:
-                            type = PlatformType.UnknownUnix;
-                            break;
-
-                        default:
-                            type = PlatformType.Unknown;
-                            break;
-                    }
-                }
-
-                return type;
-            }
-        }
+        public static PlatformType Type { get; } = GetPlatformType();
 
         /// <summary>Gets the system version string.</summary>
         /// <value>The system version string.</value>
-        public static string SystemVersionString
-        {
-            get
-            {
-                if (systemVersionString == null)
-                {
-                    systemVersionString = Environment.OSVersion.VersionString;
-                    if (IsMicrosoft)
-                    {
-                        // all done
-                    }
-                    else if (IsAndroid)
-                    {
-                        // TODO Android.OS.Build
-                        systemVersionString = "Android " + systemVersionString;
-                    }
-                    else
-                    {
-                        Process process = Process.Start(new ProcessStartInfo("uname", "-a") { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, });
-                        string systemVersionString = null;
-                        ThreadPool.QueueUserWorkItem(delegate { systemVersionString = process.StandardOutput.ReadToEnd(); });
-                        if (!process.WaitForExit(10000))
-                        {
-                            try
-                            {
-                                process.Kill();
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        int i = systemVersionString?.IndexOf('\n') ?? -1;
-                        if (i > -1)
-                        {
-                            systemVersionString = systemVersionString.Substring(0, i);
-                        }
-                    }
-                }
-
-                return systemVersionString;
-            }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether we run at a microsoft os or not.
-        /// </summary>
-        public static bool IsMicrosoft
-        {
-            get
-            {
-                switch ((int)Environment.OSVersion.Platform)
-                {
-                    case 0: /*Win32S*/
-                    case 1: /*Win32NT*/
-                    case 2: /*Win32Windows*/
-                    case 3: /*Windows CE / Compact Framework*/
-                    case 5: /*Xbox*/
-                        return true;
-
-                    default:
-                    case 4: /*Unix*/
-                    case 6: /*MacOSX*/
-                    case 128:
-                        return false;
-                }
-            }
-        }
+        public static string SystemVersionString { get; } = GetSystemVersionString();
 
         /// <summary>
         /// Gets a value indicating whether we run under mono or not.
         /// </summary>
-        public static bool IsMono
-        {
-            get
-            {
-                return AppDom.FindType("Mono.Runtime", AppDom.LoadMode.NoException) != null;
-            }
-        }
+        public static bool IsMono { get; } = GetIsMono();
 
         /// <summary>
         /// Gets a value indicating whether we run at android or not.
         /// </summary>
-        public static bool IsAndroid
+        public static bool IsAndroid { get; } = GetIsAndroid();
+
+        /// <summary>
+        /// Gets a value indicating whether we run at a microsoft os or not.
+        /// </summary>
+        public static bool IsMicrosoft { get; } = GetIsMicrosoft();
+
+        static PlatformType GetPlatformType()
         {
-            get
+            switch ((int)Environment.OSVersion.Platform)
             {
-                return AppDom.FindAssembly("Mono.Android", false) != null;
+                case 0: /*Win32S*/
+                case 1: /*Win32NT*/
+                case 2: /*Win32Windows*/
+                    return PlatformType.Windows;
+
+                case 3: /*Windows CE / Compact Framework*/
+                    return PlatformType.CompactFramework;
+
+                case 4: /*Unix, mono returns this on all platforms except windows*/
+                    if (AppDom.FindAssembly("Mono.Android", false) != null)
+                    {
+                        return PlatformType.Android;
+                    }
+
+                    try
+                    {
+                        if (File.Exists("/usr/lib/libc.dylib"))
+                        {
+                            return PlatformType.MacOS;
+                        }
+                    }
+                    catch
+                    { /*Exception on Android on this one... why ?*/
+                    }
+
+                    string osType = SystemVersionString.ToLower();
+                    if (osType.StartsWith("linux"))
+                    {
+                        return PlatformType.Linux;
+                    }
+                    if (osType.StartsWith("darwin"))
+                    {
+                        return PlatformType.MacOS;
+                    }
+                    if (osType.StartsWith("solaris"))
+                    {
+                        return PlatformType.Solaris;
+                    }
+                    if (osType.StartsWith("bsd"))
+                    {
+                        return PlatformType.BSD;
+                    }
+                    if (osType.StartsWith("msys"))
+                    {
+                        return PlatformType.Windows;
+                    }
+                    if (osType.StartsWith("cygwin"))
+                    {
+                        return PlatformType.Windows;
+                    }
+                    return PlatformType.UnknownUnix;
+
+                case 5: /*Xbox*/
+                    return PlatformType.Xbox;
+
+                case 6: /*MacOSX*/
+                    return PlatformType.MacOS;
+
+                case 128:
+                    return PlatformType.UnknownUnix;
+
+                default:
+                    return PlatformType.Unknown;
             }
+        }
+
+        static string GetSystemVersionString()
+        {
+            var systemVersionString = Environment.OSVersion.VersionString;
+            if (IsMicrosoft)
+            {
+                // all done
+            }
+            else if (IsAndroid)
+            {
+                // TODO Android.OS.Build
+                systemVersionString = "Android " + systemVersionString;
+            }
+            else
+            {
+                Process process = Process.Start(new ProcessStartInfo("uname", "-a") { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, });
+                systemVersionString = null;
+                var task = Task.Factory.StartNew(() => { systemVersionString = process.StandardOutput.ReadToEnd(); });
+                if (!process.WaitForExit(10000))
+                {
+                    try
+                    {
+                        process.Kill();
+                    }
+                    catch
+                    {
+                    }
+                }
+                task.Wait();
+
+                int i = systemVersionString?.IndexOf('\n') ?? -1;
+                if (i > -1)
+                {
+                    systemVersionString = systemVersionString.Substring(0, i);
+                }
+            }
+            return systemVersionString;
+        }
+
+        static bool GetIsMicrosoft()
+        {
+            switch ((int)Environment.OSVersion.Platform)
+            {
+                case 0: /*Win32S*/
+                case 1: /*Win32NT*/
+                case 2: /*Win32Windows*/
+                case 3: /*Windows CE / Compact Framework*/
+                case 5: /*Xbox*/
+                    return true;
+
+                default:
+                case 4: /*Unix*/
+                case 6: /*MacOSX*/
+                case 128:
+                    return false;
+            }
+        }
+
+#if alternative
+        static PlatformType GetPlatformType()
+        {
+            if (AppDom.FindAssembly("Mono.Android", false) != null)
+            {
+                return PlatformType.Android;
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return PlatformType.Windows;
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return PlatformType.MacOS;
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return PlatformType.Linux;
+            }
+            try
+            {
+                if (File.Exists("/usr/lib/libc.dylib"))
+                {
+                    return PlatformType.MacOS;
+                }
+            }
+            catch
+            {
+                /*Exception on Android on this one... why ?*/
+            }
+
+            string osType = RuntimeInformation.OSDescription.ToLower();
+            if (osType.StartsWith("linux"))
+            {
+                return PlatformType.Linux;
+            }
+            if (osType.StartsWith("darwin"))
+            {
+                return PlatformType.MacOS;
+            }
+            if (osType.StartsWith("solaris"))
+            {
+                return PlatformType.Solaris;
+            }
+            if (osType.StartsWith("bsd"))
+            {
+                return PlatformType.BSD;
+            }
+            if (osType.StartsWith("msys"))
+            {
+                return PlatformType.Windows;
+            }
+            if (osType.StartsWith("cygwin"))
+            {
+                return PlatformType.Windows;
+            }
+            return PlatformType.UnknownUnix;
+        }
+
+        static string GetSystemVersionString()
+        {
+            var systemVersionString = RuntimeInformation.OSDescription;
+            if (IsMicrosoft)
+            {
+                // all done
+            }
+            else if (IsAndroid)
+            {
+                // TODO Android.OS.Build
+                systemVersionString = "Android " + systemVersionString;
+            }
+            else
+            {
+                Process process = Process.Start(new ProcessStartInfo("uname", "-a") { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, });
+                var task = Task.Factory.StartNew(() => { systemVersionString = process.StandardOutput.ReadToEnd(); });
+                if (!process.WaitForExit(10000))
+                {
+                    try
+                    {
+                        process.Kill();
+                    }
+                    catch
+                    {
+                    }
+                }
+                task.Wait();
+
+                int i = systemVersionString?.IndexOf('\n') ?? -1;
+                if (i > -1)
+                {
+                    systemVersionString = systemVersionString.Substring(0, i);
+                }
+            }
+            return systemVersionString;
+        }
+
+        static bool GetIsMicrosoft()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return true;
+            }
+            return false;
+        }
+#endif
+
+        static bool GetIsMono()
+        {
+            return AppDom.FindType("Mono.Runtime", null, AppDom.LoadMode.NoException) != null;
+        }
+
+        static bool GetIsAndroid()
+        {
+            return AppDom.FindType("Android.Runtime", null, AppDom.LoadMode.NoException) != null;
         }
     }
 }

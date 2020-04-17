@@ -1,7 +1,7 @@
 namespace Cave
 {
     /// <summary>
-    /// Provides all platform types
+    /// Provides all platform types.
     /// </summary>
     public enum PlatformType
     {
