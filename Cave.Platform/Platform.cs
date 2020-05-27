@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -17,26 +18,38 @@ namespace Cave
         /// <summary>
         /// Gets the <see cref="PlatformType"/> of the current platform.
         /// </summary>
-        public static PlatformType Type { get; } = GetPlatformType();
+        public static PlatformType Type => GetCached(nameof(Type), GetPlatformType);
 
         /// <summary>Gets the system version string.</summary>
         /// <value>The system version string.</value>
-        public static string SystemVersionString { get; } = GetSystemVersionString();
+        public static string SystemVersionString => GetCached(nameof(SystemVersionString), GetSystemVersionString);
 
         /// <summary>
         /// Gets a value indicating whether we run under mono or not.
         /// </summary>
-        public static bool IsMono { get; } = GetIsMono();
+        public static bool IsMono => GetCached(nameof(IsMono), GetIsMono);
 
         /// <summary>
         /// Gets a value indicating whether we run at android or not.
         /// </summary>
-        public static bool IsAndroid { get; } = GetIsAndroid();
+        public static bool IsAndroid => GetCached(nameof(IsAndroid), GetIsAndroid);
 
         /// <summary>
         /// Gets a value indicating whether we run at a microsoft os or not.
         /// </summary>
-        public static bool IsMicrosoft { get; } = GetIsMicrosoft();
+        public static bool IsMicrosoft => GetCached(nameof(IsMicrosoft), GetIsMicrosoft);
+
+        static Dictionary<string, object> values = new Dictionary<string, object>();
+
+        static T GetCached<T>(string name, Func<T> getter)
+        {
+            if (!values.TryGetValue(name, out object value))
+            {
+                value = getter();
+                values[name] = value;
+            }
+            return (T)value;
+        }
 
         static PlatformType GetPlatformType()
         {
@@ -120,30 +133,29 @@ namespace Cave
                 // TODO Android.OS.Build
                 systemVersionString = "Android " + systemVersionString;
             }
+            else if (File.Exists("/proc/version"))
+            {
+                systemVersionString = File.ReadAllText("/proc/version");
+            }
             else
             {
-                Process process = Process.Start(new ProcessStartInfo("uname", "-a") { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true, });
-                systemVersionString = null;
-                var task = Task.Factory.StartNew(() => { systemVersionString = process.StandardOutput.ReadToEnd(); });
-                if (!process.WaitForExit(10000))
+                var versionString = "";
+                var task = Task.Factory.StartNew(() =>
                 {
-                    try
+                    Process process = Process.Start(new ProcessStartInfo("uname", "-a")
                     {
-                        process.Kill();
-                    }
-                    catch
-                    {
-                    }
-                }
-                task.Wait();
-
-                int i = systemVersionString?.IndexOf('\n') ?? -1;
-                if (i > -1)
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                    });
+                    versionString = process.StandardOutput.ReadToEnd();
+                });
+                if (task.Wait(1000))
                 {
-                    systemVersionString = systemVersionString.Substring(0, i);
+                    systemVersionString = versionString;
                 }
             }
-            return systemVersionString;
+            return systemVersionString.BeforeFirst('\n');
         }
 
         static bool GetIsMicrosoft()
